@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAMID CHAT</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{background:#0b141a;font-family:sans-serif}
+.chat-bg{background:#0b141a}
+.msg-me{background:#005c4b;color:white}
+.msg-other{background:#202c33;color:white}
+</style>
+</head>
+<body class="text-white">
+
+<!-- ECRAN 1 : CREER COMPTE -->
+<div id="login" class="min-h-screen flex flex-col items-center justify-center p-6">
+  <div class="text-6xl mb-4">💬</div>
+  <h1 class="text-4xl font-bold mb-1">HAMID CHAT</h1>
+  <p class="text-gray-400 mb-8">Discute comme sur WhatsApp</p>
+  <div class="w-full max-w-sm bg-[#111b21] p-6 rounded-2xl">
+    <p class="mb-2 text-sm text-gray-300">Ton pseudo :</p>
+    <input id="pseudo" placeholder="Ex: Hamid, Amina..." class="w-full p-4 rounded-xl bg-[#202c33] outline-none mb-4 text-white">
+    <button onclick="entrer()" class="w-full bg-[#00a884] p-4 rounded-xl font-bold text-lg">ENTRER DANS LE CHAT ➡️</button>
+    <p class="text-center text-xs text-gray-500 mt-4">Pas d'email. Juste ton pseudo.</p>
+  </div>
+</div>
+
+<!-- ECRAN 2 : CHAT -->
+<div id="chat" class="hidden min-h-screen flex-col">
+  <div class="bg-[#202c33] p-4 flex items-center gap-3 sticky top-0 z-10">
+    <div class="w-10 h-10 bg-[#00a884] rounded-full flex items-center justify-center font-bold text-xl">H</div>
+    <div class="flex-1">
+      <p class="font-bold">HAMID CHAT - Groupe Public</p>
+      <p class="text-xs text-green-400">● En ligne - <span id="monPseudo"></span></p>
+    </div>
+    <button onclick="location.reload()" class="text-xs bg-red-500 px-3 py-2 rounded-full">Quitter</button>
+  </div>
+  <div id="messages" class="flex-1 p-4 space-y-3 pb-28"></div>
+  <div class="fixed bottom-0 left-0 right-0 bg-[#202c33] p-3 flex gap-2">
+    <input id="inputMsg" placeholder="Écris ton message..." class="flex-1 p-3 rounded-full bg-[#2a3942] outline-none">
+    <button onclick="envoyer()" class="bg-[#00a884] w-12 h-12 rounded-full text-2xl">➤</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDbJszkCYNWefkyRbckjgyDuB24K_XnKuE",
+  authDomain: "hamid-chat-a27cb.firebaseapp.com",
+  projectId: "hamid-chat-a27cb",
+  storageBucket: "hamid-chat-a27cb.firebasestorage.app",
+  messagingSenderId: "226727880147",
+  appId: "1:226727880147:web:d98f3359817afe65543b26",
+  measurementId: "G-P2LNLKVBSE"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+let monPseudo = "";
+
+window.entrer = () => {
+  const p = document.getElementById('pseudo').value.trim();
+  if(!p){ alert("Écris ton pseudo d'abord !"); return; }
+  monPseudo = p;
+  localStorage.setItem('hamid_pseudo', p);
+  document.getElementById('login').style.display='none';
+  document.getElementById('chat').style.display='flex';
+  document.getElementById('monPseudo').innerText = p;
+  ecouter();
+}
+
+function ecouter(){
+  const q = query(collection(db, "messages"), orderBy("time", "asc"));
+  onSnapshot(q, (snap)=>{
+    const div = document.getElementById('messages');
+    div.innerHTML = "";
+    snap.forEach(doc=>{
+      const m = doc.data();
+      const moi = m.pseudo === monPseudo;
+      div.innerHTML += `<div class="flex ${moi?'justify-end':'justify-start'}"><div class="${moi?'msg-me':'msg-other'} px-4 py-2 rounded-2xl max-w-[80%]"><p class="text-[11px] opacity-70 font-bold">${moi?'Moi':m.pseudo}</p><p>${m.texte}</p></div></div>`;
+    });
+    window.scrollTo(0, document.body.scrollHeight);
+  });
+}
+
+window.envoyer = async () => {
+  const inp = document.getElementById('inputMsg');
+  const txt = inp.value.trim();
+  if(!txt) return;
+  await addDoc(collection(db, "messages"), { pseudo: monPseudo, texte: txt, time: serverTimestamp() });
+  inp.value = "";
+}
+
+document.getElementById('inputMsg')?.addEventListener('keypress', e=>{ if(e.key==='Enter') envoyer(); });
+
+const saved = localStorage.getItem('hamid_pseudo');
+if(saved){ document.getElementById('pseudo').value = saved; }
+</script>
+</body>
+</html>
